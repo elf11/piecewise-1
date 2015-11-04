@@ -1,0 +1,20 @@
+---
+- name: Copy geo data to server
+  copy: src=encentral_example/{{ item.src }} dest=/opt/bq2geojson/html/{{ item.dest }}
+  with_items:
+      - { src: encentral.geojson, dest: encentral.geojson }
+      - { src: encentral.topojson, dest: encentral.topojson }
+      - { src: encentral, dest: '' }
+      - { src: center.js, dest: js/center.js }
+- name: Copy extra_data.py to server
+  copy: src=encentral_example/extra_data.py dest=/opt/piecewise/
+- pip: name=ipaddress state=latest
+- name: Ingest council districts to postgres
+  command: ogr2ogr -overwrite -f PostgreSQL 'PG:user=postgres dbname=piecewise' -nln encentral /opt/bq2geojson/html/encentral.geojson
+- name: Ingest census blocks to postgres
+  command: ogr2ogr -overwrite -f PostgreSQL -t_srs EPSG:4326 -nln encentral -nlt MultiPolygon 'PG:user=postgres dbname=piecewise' /opt/bq2geojson/html/encentral/encentral.shp
+- name: Install encentral piecewise configuration
+  copy: src=encentral_example/piecewise_config.json dest=/etc/piecewise/config.json
+- name: Restart uwsgi so piecewise config is detected
+  service: name=uwsgi state=restarted
+- command: python extra_data.py chdir=/opt/piecewise

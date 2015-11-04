@@ -12,7 +12,7 @@ Vagrant.configure(2) do |config|
 
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://atlas.hashicorp.com/search.
-  config.vm.box = "debian/jessie64"
+  config.vm.box = "jessie64"
   #config.vm.box = "boxcutter/centos71"
 
   # Disable automatic box update checking. If you disable this, then
@@ -67,7 +67,7 @@ Vagrant.configure(2) do |config|
   # documentation for more information about their specific syntax and use.
   config.vm.provision "ansible" do |ansible|
     ansible.playbook = "playbook.yml"
-    ansible.raw_ssh_args = ['-o IdentitiesOnly=yes']
+    #ansible.raw_ssh_args = ['-o IdentitiesOnly=yes']
     ansible.groups = {
       "group1" => "machine1"
     }

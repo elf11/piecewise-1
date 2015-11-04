@@ -1,0 +1,20 @@
+---
+- name: Copy geo data to server
+  copy: src=newengland_example/{{ item.src }} dest=/opt/bq2geojson/html/{{ item.dest }}
+  with_items:
+      - { src: newengland.geojson, dest: newengland.geojson }
+      - { src: newengland.topojson, dest: newengland.topojson }
+      - { src: newengland, dest: '' }
+      - { src: center.js, dest: js/center.js }
+- name: Copy extra_data.py to server
+  copy: src=newengland_example/extra_data.py dest=/opt/piecewise/
+- pip: name=ipaddress state=latest
+- name: Ingest council districts to postgres
+  command: ogr2ogr -overwrite -f PostgreSQL 'PG:user=postgres dbname=piecewise' -nln newengland /opt/bq2geojson/html/newengland.geojson
+- name: Ingest census blocks to postgres
+  command: ogr2ogr -overwrite -f PostgreSQL -t_srs EPSG:4326 -nln newengland -nlt MultiPolygon 'PG:user=postgres dbname=piecewise' /opt/bq2geojson/html/newengland/newengland.shp
+- name: Install newengland piecewise configuration
+  copy: src=newengland_example/piecewise_config.json dest=/etc/piecewise/config.json
+- name: Restart uwsgi so piecewise config is detected
+  service: name=uwsgi state=restarted
+- command: python extra_data.py chdir=/opt/piecewise
